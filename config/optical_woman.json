@@ -1,7 +1,8 @@
 {
     "input": "videos/woman.mp4",
-    "output": "videos/woman/blend.mp4",
-    "work_dir": "videos/woman",
+    "output": "videos/woman_optical/blend.mp4",
+    "work_dir": "videos/woman_optical",
+    "frame_diff": "optical",
     "key_subdir": "keys",
     "frame_count": 102,
     "interval": 10,

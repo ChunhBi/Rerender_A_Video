@@ -1,9 +1,9 @@
 {
-    "input": "videos/woman.mp4",
-    "output": "videos/woman/blend.mp4",
-    "work_dir": "videos/woman",
+    "input": "videos/moments_become_eternity.mp4",
+    "output": "videos/eternity/blend.mp4",
+    "work_dir": "videos/eternity",
     "key_subdir": "keys",
-    "frame_count": 102,
+    "frame_count": 200,
     "interval": 10,
     "sd_model": "models/revAnimated_v122EOL.safetensors",
     "prompt": "a beautiful woman in CG style",

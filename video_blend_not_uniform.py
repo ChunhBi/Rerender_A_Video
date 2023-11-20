@@ -15,7 +15,7 @@ import blender.histogram_blend as histogram_blend
 from blender.guide import (BaseGuide, ColorGuide, EdgeGuide, PositionalGuide,
                            TemporalGuide)
 from blender.poisson_fusion import poisson_fusion
-from blender.video_sequence import VideoSequence
+from blender.video_sequence_not_uniform import VideoSequence
 from flow.flow_utils import flow_calc
 from src.video_util import frame_to_video
 
@@ -57,20 +57,40 @@ def g_error_mask(dist1, dist2, weight1=1, weight2=1):
     return output
 
 
-def create_sequence(base_dir, beg, end, interval, key_dir):
+# def create_sequence(base_dir, beg, end, interval, key_dir):
+#     sequence = VideoSequence(base_dir, beg, end, interval, 'video', key_dir,
+#                              'tmp', '%04d.png', '%04d.png')
+#     return sequence
+
+
+def create_sequence_not_uniform(base_dir, beg, end, interval, key_dir):
     sequence = VideoSequence(base_dir, beg, end, interval, 'video', key_dir,
                              'tmp', '%04d.png', '%04d.png')
+
     return sequence
 
 
+# # process_one_sequence_not_uniform
 def process_one_sequence(i, video_sequence: VideoSequence):
-    interval = video_sequence.interval
+    # interval = video_sequence.interval
+
+    interval = video_sequence.get_interval(i)
+
     for is_forward in [True, False]:
         input_seq = video_sequence.get_input_sequence(i, is_forward)
         output_seq = video_sequence.get_output_sequence(i, is_forward)
         flow_seq = video_sequence.get_flow_sequence(i, is_forward)
         key_img_id = i if is_forward else i + 1
         key_img = video_sequence.get_key_img(key_img_id)
+
+        # continue
+
+        # print(input_seq)
+        # print(output_seq)
+        # print(flow_seq)
+        # print(key_img_id)
+        # print(key_img)
+        # exit()
 
         for j in range(interval - 1):
             i1 = cv2.imread(input_seq[j])
@@ -140,7 +160,8 @@ def process_one_sequence(i, video_sequence: VideoSequence):
 
                 subprocess.run(cmd,
                                shell=True,
-                               capture_output=not OPEN_EBSYNTH_LOG)
+                               capture_output=False)
+                               # capture_output=not OPEN_EBSYNTH_LOG)
 
 
 def process_sequences(i_arr, video_sequence: VideoSequence):
@@ -231,7 +252,10 @@ def process_seq(video_sequence: VideoSequence,
                 blend_gradient=True):
     key1_img = cv2.imread(video_sequence.get_key_img(i))
     img_shape = key1_img.shape
-    interval = video_sequence.interval
+
+    # interval = video_sequence.interval
+    interval = video_sequence.get_interval(i)
+
     beg_id = video_sequence.get_sequence_beg_id(i)
 
     oas = video_sequence.get_output_sequence(i)
@@ -246,6 +270,8 @@ def process_seq(video_sequence: VideoSequence,
     obs = [cv2.imread(x) for x in obs]
     inputs = [cv2.imread(x) for x in inputs]
     flow_seq = video_sequence.get_flow_sequence(i)
+
+    # print(binas)
 
     dist1s = []
     dist2s = []
@@ -314,8 +340,13 @@ def main(args):
     global MAX_PROCESS
     MAX_PROCESS = args.n_proc
 
-    video_sequence = create_sequence(f'{args.name}', args.beg, args.end,
-                                     args.itv, args.key)
+    # video_sequence = create_sequence(f'{args.name}', args.beg, args.end,
+    #                                  args.itv, args.key)
+
+    print(args)
+
+    video_sequence = create_sequence_not_uniform(f'{args.name}', args.beg, args.end,
+                                                 args.itv, args.key)
 
     print(video_sequence.n_seq)
 

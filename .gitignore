@@ -136,3 +136,5 @@ data
 .vector_cache
 
 __pycache
+
+/deps

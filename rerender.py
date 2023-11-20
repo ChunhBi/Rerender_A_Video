@@ -25,9 +25,9 @@ from flow.flow_utils import get_warped_and_mask
 from src.config import RerenderConfig
 from src.controller import AttentionControl
 from src.ddim_v_hacked import DDIMVSampler
-from src.freeu import freeu_forward
 from src.img_util import find_flat_region, numpy2tensor
 from src.video_util import frame_to_video, get_fps, prepare_frames
+from src.freeu import freeu_forward
 
 blur = T.GaussianBlur(kernel_size=(9, 9), sigma=(18, 18))
 totensor = T.PILToTensor()
@@ -54,9 +54,11 @@ def apply_color_correction(correction, original_image):
 
 
 def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
-
     # Preprocess input
-    prepare_frames(cfg.input_path, cfg.input_dir, cfg.image_resolution, cfg.crop, cfg.use_limit_device_resolution)
+    prepare_frames(cfg.input_path, cfg.input_dir, cfg.image_resolution,
+                   cfg.crop)
+
+    print("[STATE] Got video frames.")
 
     # Load models
     if cfg.control_type == 'HED':
@@ -74,12 +76,15 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
     model: ControlLDM = create_model(
         './deps/ControlNet/models/cldm_v15.yaml').cpu()
     if cfg.control_type == 'HED':
+        # model.load_state_dict(
+        #     load_state_dict('./models/control_sd15_hed.pth', location='cuda'))
         model.load_state_dict(
-            load_state_dict('./models/control_sd15_hed.pth', location='cuda'))
+            load_state_dict('./models/control_sd15_hed.pth', location='cuda'), strict=False)
     elif cfg.control_type == 'canny':
+        # model.load_state_dict(
+        #     load_state_dict('./models/control_sd15_canny.pth', location='cuda'))
         model.load_state_dict(
-            load_state_dict('./models/control_sd15_canny.pth',
-                            location='cuda'))
+            load_state_dict('./models/control_sd15_canny.pth', location='cuda'), strict=False)
     model = model.cuda()
     model.control_scales = [cfg.control_strength] * 13
 
@@ -149,6 +154,8 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
     if cfg.frame_count >= 0:
         imgs = imgs[:cfg.frame_count]
 
+    print("[STATE] Model Loaded.")
+
     with torch.no_grad():
         frame = cv2.imread(imgs[0])
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -176,12 +183,12 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
         cond = {
             'c_concat': [control],
             'c_crossattn':
-            [model.get_learned_conditioning([prompt] * num_samples)]
+                [model.get_learned_conditioning([prompt] * num_samples)]
         }
         un_cond = {
             'c_concat': [control],
             'c_crossattn':
-            [model.get_learned_conditioning([n_prompt] * num_samples)]
+                [model.get_learned_conditioning([n_prompt] * num_samples)]
         }
         shape = (4, H // 8, W // 8)
 
@@ -205,8 +212,9 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
         first_img = pre_img
 
         x_samples = (
-            einops.rearrange(x_samples, 'b c h w -> b h w c') * 127.5 +
-            127.5).cpu().numpy().clip(0, 255).astype(np.uint8)
+                einops.rearrange(x_samples, 'b c h w -> b h w c') * 127.5 +
+                127.5).cpu().numpy().clip(0, 255).astype(np.uint8)
+
     color_corrections = setup_color_correction(Image.fromarray(x_samples[0]))
     Image.fromarray(x_samples[0]).save(os.path.join(cfg.first_dir,
                                                     'first.jpg'))
@@ -215,9 +223,31 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
     if first_img_only:
         exit(0)
 
-    for i in range(0, min(len(imgs), cfg.frame_count) - 1, cfg.interval):
+    print("[STATE] first_edge generated.")
+
+    # ================
+
+    print(cfg.input_path)
+    print(cfg.input_dir)
+
+    # cal_diff_func = "optical"
+
+    import key_frame_sampler
+    key_frame_indexes = key_frame_sampler.extract_key_frames(cfg.input_dir, cfg.frame_diff, cfg.interval)
+    print(key_frame_indexes)
+    # raise
+
+    key_frame_indexes = [index for index in key_frame_indexes if index < cfg.frame_count]
+
+    # # replace uniform key frame sampling with frame_diff method
+
+    # for _key_img_i, i in enumerate(range(0, min(len(imgs), cfg.frame_count) - 1, cfg.interval)):
+    for _key_img_i, i in enumerate(key_frame_indexes):
+
+        # ================
+
         cid = i + 1
-        print(cid)
+        print(f"{cid} / {key_frame_indexes[-1]}")
         if cid <= (len(imgs) - 1):
             frame = cv2.imread(imgs[cid])
         else:
@@ -291,15 +321,15 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
             pre_result = direct_result
             pre_img = img
             viz = (
-                einops.rearrange(direct_result, 'b c h w -> b h w c') * 127.5 +
-                127.5).cpu().numpy().clip(0, 255).astype(np.uint8)
+                    einops.rearrange(direct_result, 'b c h w -> b h w c') * 127.5 +
+                    127.5).cpu().numpy().clip(0, 255).astype(np.uint8)
 
         else:
 
             blend_results = (1 - blend_mask_pre
                              ) * warped_pre + blend_mask_pre * direct_result
             blend_results = (
-                1 - blend_mask_0) * warped_0 + blend_mask_0 * blend_results
+                                    1 - blend_mask_0) * warped_0 + blend_mask_0 * blend_results
 
             bwd_occ = 1 - torch.clamp(1 - bwd_occ_pre + 1 - bwd_occ_0, 0, 1)
             blend_mask = blur(
@@ -317,8 +347,9 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
             blend_results_rec_new = model.decode_first_stage(xtrg_)
             tmp = (abs(blend_results_rec_new - blend_results).mean(
                 dim=1, keepdims=True) > 0.25).float()
-            mask_x = F.max_pool2d((F.interpolate(
-                tmp, scale_factor=1 / 8., mode='bilinear') > 0).float(),
+            mask_x = F.max_pool2d((F.interpolate(tmp,
+                                                 scale_factor=1 / 8.,
+                                                 mode='bilinear') > 0).float(),
                                   kernel_size=3,
                                   stride=1,
                                   padding=1)
@@ -333,7 +364,7 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
             masks = []
             for i in range(ddim_steps):
                 if i <= ddim_steps * mask_period[
-                        0] or i >= ddim_steps * mask_period[1]:
+                    0] or i >= ddim_steps * mask_period[1]:
                     masks += [None]
                 else:
                     masks += [mask * cfg.mask_strength]
@@ -377,10 +408,21 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
 
         Image.fromarray(viz[0]).save(
             os.path.join(cfg.key_dir, f'{cid:04d}.png'))
+
+        print(os.path.join(cfg.key_dir, f'{cid:04d}.png'))
+        print(f"[STATE] Translated {_key_img_i} image")
+
+        # if _key_img_i == 2:
+        #     raise
+
+    print("[STATE] key frames generated!")
+
     if key_video_path is not None:
         fps = get_fps(cfg.input_path)
         fps //= cfg.interval
         frame_to_video(key_video_path, cfg.key_dir, fps, False)
+
+        print("[STATE] Frame to Video Generated!")
 
 
 def postprocess(cfg: RerenderConfig, ne: bool, max_process: int, tmp: bool,
@@ -397,8 +439,12 @@ def postprocess(cfg: RerenderConfig, ne: bool, max_process: int, tmp: bool,
     use_ps = '-ps' if ps else ''
     o_video_cmd = f'--output {o_video}'
 
+    f_video_blend = "video_blend.py"
+    if cfg.frame_diff != "base":
+        f_video_blend = "video_blend_not_uniform.py"
+
     cmd = (
-        f'python video_blend.py {video_base_dir} --beg 1 --end {end_frame} '
+        f'python {f_video_blend} {video_base_dir} --beg 1 --end {end_frame} '
         f'--itv {interval} --key {key_dir} {use_e} {o_video_cmd} --fps {fps} '
         f'--n_proc {max_process} {use_tmp} {use_ps}')
     print(cmd)

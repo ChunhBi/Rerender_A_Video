@@ -83,11 +83,75 @@ def calculate_threshold(frame_differences, max_interval):
     return np.mean(frame_differences) * max_interval
 
 
+# def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
+#     """Adaptive frame sampling extracts key frames"""
+#
+#     frames = sorted([os.path.join(input_folder, f) for f in os.listdir(input_folder)])
+#
+#     print(cal_diff_func)
+#     if cal_diff_func == "hist":
+#         calculate_difference_function = calculate_difference_histogram
+#     elif cal_diff_func == "feature":
+#         calculate_difference_function = calculate_difference_feature_points
+#     elif cal_diff_func == "optical":
+#         calculate_difference_function = calculate_difference_optical_flow
+#     elif cal_diff_func == "dl":
+#         calculate_difference_function = calculate_difference_deep_learning
+#     elif cal_diff_func == "abs":
+#         calculate_difference_function = calculate_frame_difference
+#     else:
+#         print("!!Base!!")
+#         return list(range(0, len(frames), max_interval))
+#
+#     frame_differences = []
+#     last_frame = None
+#
+#     # calculate difference
+#     for frame_path in tqdm(frames):
+#         frame = cv2.imread(frame_path)
+#         if last_frame is not None:
+#             difference = calculate_difference_function(last_frame, frame)
+#             frame_differences.append(difference)
+#         last_frame = frame
+#
+#     # threshold
+#     threshold = calculate_threshold(frame_differences, max_interval)
+#     last_key_frame_index = -1
+#
+#     key_frame_idxes = set()
+#
+#     # extract key frames
+#     accumulated_diff = 0
+#     for i, frame_path in enumerate(frames):
+#         frame = cv2.imread(frame_path)
+#         if i > 0:
+#             accumulated_diff += frame_differences[i - 1]
+#
+#         if i == 0 or (i - last_key_frame_index) >= max_interval or accumulated_diff > threshold:
+#             # key_frame_path = os.path.join(output_folder, f'key_frame_{i}.jpg')
+#             # cv2.imwrite(key_frame_path, frame)
+#             key_frame_idxes.add(i)
+#             last_key_frame_index = i
+#             accumulated_diff = 0  # 重置累积差异
+#
+#     key_frame_idxes.add(last_key_frame_index)
+#     key_frame_idxes = sorted(list(key_frame_idxes))
+#
+#     return key_frame_idxes
+
+
 def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
-    """Adaptive frame sampling extracts key frames"""
+    """Extracts key frames based on a regular interval or difference-based selection"""
 
     frames = sorted([os.path.join(input_folder, f) for f in os.listdir(input_folder)])
+    total_frames = len(frames)
+    num_key_frames = total_frames // max_interval + (1 if total_frames % max_interval else 0)
 
+    # Method 1: Uniform Sampling
+    uniform_key_frames = [frames[i * max_interval] for i in range(num_key_frames)]
+    uniform_key_frames[-1] = frames[-1]  # Ensure last frame is included
+
+    # Method 2: Difference-Based Sampling (Using given difference calculation method)
     print(cal_diff_func)
     if cal_diff_func == "hist":
         calculate_difference_function = calculate_difference_histogram
@@ -103,40 +167,38 @@ def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
         print("!!Base!!")
         return list(range(0, len(frames), max_interval))
 
+    # num key frames
+    total_frames = len(frames)
+    expected_num_intervals = (total_frames - 1) // max_interval  # 减一因为是基于间隔计算
+
+    # frame differences
     frame_differences = []
-    last_frame = None
+    for i in range(1, total_frames):
+        frame = cv2.imread(frames[i])
+        last_frame = cv2.imread(frames[i - 1])
+        difference = calculate_difference_function(last_frame, frame)
+        frame_differences.append(difference)
 
-    # calculate difference
-    for frame_path in tqdm(frames):
-        frame = cv2.imread(frame_path)
-        if last_frame is not None:
-            difference = calculate_difference_function(last_frame, frame)
-            frame_differences.append(difference)
-        last_frame = frame
+    # target
+    total_difference = sum(frame_differences)
+    target_diff_per_interval = total_difference / expected_num_intervals
 
-    # threshold
-    threshold = calculate_threshold(frame_differences, max_interval)
-    last_key_frame_index = -1
-
-    key_frame_idxes = set()
-
-    # extract key frames
+    # select
+    key_frame_idxes = [0]
     accumulated_diff = 0
-    for i, frame_path in enumerate(frames):
-        frame = cv2.imread(frame_path)
-        if i > 0:
-            accumulated_diff += frame_differences[i - 1]
 
-        if i == 0 or (i - last_key_frame_index) >= max_interval or accumulated_diff > threshold:
-            # key_frame_path = os.path.join(output_folder, f'key_frame_{i}.jpg')
-            # cv2.imwrite(key_frame_path, frame)
-            key_frame_idxes.add(i)
-            last_key_frame_index = i
-            accumulated_diff = 0  # 重置累积差异
+    for i in range(1, total_frames):
+        accumulated_diff += frame_differences[i - 1]
+        # sum > target sum
+        if accumulated_diff >= target_diff_per_interval:
+            key_frame_idxes.append(i)
+            accumulated_diff = 0
 
-    key_frame_idxes.add(last_key_frame_index)
-    key_frame_idxes = sorted(list(key_frame_idxes))
+    # last
+    if key_frame_idxes[-1] != len(frames) - 1:
+        key_frame_idxes.append(len(frames) - 1)
 
+    print(key_frame_idxes, len(key_frame_idxes))
     return key_frame_idxes
 
 

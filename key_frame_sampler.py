@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 
 def calculate_difference_histogram(frame1, frame2):
-    """使用直方图比较计算两帧之间的差异"""
     hist1 = cv2.calcHist([frame1], [0], None, [256], [0, 256])
     hist2 = cv2.calcHist([frame2], [0], None, [256], [0, 256])
     diff = cv2.compareHist(hist1, hist2, cv2.HISTCMP_BHATTACHARYYA)
@@ -18,7 +17,7 @@ def calculate_difference_histogram(frame1, frame2):
 
 
 def calculate_difference_feature_points(frame1, frame2):
-    """使用ORB特征点匹配计算两帧之间的差异"""
+    """ORB feature points"""
     orb = cv2.ORB_create()
 
     kp1, des1 = orb.detectAndCompute(frame1, None)
@@ -33,7 +32,7 @@ def calculate_difference_feature_points(frame1, frame2):
 
 
 def calculate_difference_optical_flow(frame1, frame2):
-    """使用光流法计算两帧之间的差异"""
+    """optical flow"""
     # 将图像转换为灰度
     gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
     gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
@@ -47,7 +46,7 @@ def calculate_difference_optical_flow(frame1, frame2):
 
 
 def calculate_difference_deep_learning(frame1, frame2):
-    """使用深度学习模型提取特征计算两帧之间的差异"""
+    """dl"""
     # 加载预训练模型
     model = models.resnet18(pretrained=True).eval()
 
@@ -74,20 +73,18 @@ def calculate_difference_deep_learning(frame1, frame2):
 
 
 def calculate_frame_difference(frame1, frame2):
-    """计算两帧之间的差异，这里使用简单的像素差异"""
+    """simple difference"""
     diff = cv2.absdiff(frame1, frame2)
     non_zero_count = cv2.countNonZero(cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY))
     return non_zero_count
 
 
 def calculate_threshold(frame_differences, max_interval):
-    """根据所有帧的差异来计算阈值"""
-    # 可以根据需要调整这里的计算方式，例如使用平均值或总和
     return np.mean(frame_differences) * max_interval
 
 
 def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
-    """自适应帧采样提取关键帧"""
+    """Adaptive frame sampling extracts key frames"""
 
     frames = sorted([os.path.join(input_folder, f) for f in os.listdir(input_folder)])
 
@@ -109,7 +106,7 @@ def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
     frame_differences = []
     last_frame = None
 
-    # 首先计算所有帧之间的差异
+    # calculate difference
     for frame_path in tqdm(frames):
         frame = cv2.imread(frame_path)
         if last_frame is not None:
@@ -117,14 +114,13 @@ def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
             frame_differences.append(difference)
         last_frame = frame
 
-    # 计算阈值
+    # threshold
     threshold = calculate_threshold(frame_differences, max_interval)
     last_key_frame_index = -1
 
     key_frame_idxes = set()
 
-    # 提取关键帧
-    # 提取关键帧
+    # extract key frames
     accumulated_diff = 0
     for i, frame_path in enumerate(frames):
         frame = cv2.imread(frame_path)
@@ -154,6 +150,5 @@ def main():
             json.dump(key_frame_idxes, f, indent=4)
 
 
-
-
-
+if __name__ == '__main__':
+    main()

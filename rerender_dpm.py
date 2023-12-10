@@ -78,11 +78,11 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
         './deps/ControlNet/models/cldm_v15.yaml').cpu()
     if cfg.control_type == 'HED':
         model.load_state_dict(
-            load_state_dict('./models/control_sd15_hed.pth', location='cuda'))
+            load_state_dict('./models/control_sd15_hed.pth', location='cuda'), strict=False)
     elif cfg.control_type == 'canny':
         model.load_state_dict(
             load_state_dict('./models/control_sd15_canny.pth',
-                            location='cuda'))
+                            location='cuda'), strict=False)
     model = model.cuda()
     model.control_scales = [cfg.control_strength] * 13
 

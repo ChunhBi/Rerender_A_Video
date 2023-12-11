@@ -234,11 +234,8 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
     # cal_diff_func = "optical"
 
     import key_frame_sampler
-    key_frame_indexes = key_frame_sampler.extract_key_frames(cfg.input_dir, cfg.frame_diff, cfg.interval)
+    key_frame_indexes = key_frame_sampler.extract_key_frames(cfg.input_dir, cfg.frame_diff, cfg.interval, cfg.frame_count)
     print(key_frame_indexes)
-    # raise
-
-    key_frame_indexes = [index for index in key_frame_indexes if index < cfg.frame_count]
 
     # # replace uniform key frame sampling with frame_diff method
 

@@ -4,7 +4,7 @@
     "work_dir": "videos/375_dl",
     "frame_diff": "dl",
     "key_subdir": "keys",
-    "frame_count": 200,
+    "frame_count": 101,
     "interval": 10,
     "sd_model": "models/revAnimated_v122EOL.safetensors",
     "prompt": "a man is giving speech, in CG style",

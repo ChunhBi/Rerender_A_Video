@@ -77,11 +77,11 @@ def calculate_frame_difference(frame1, frame2):
     return non_zero_count
 
 
-def calculate_threshold(frame_differences, max_interval):
-    return np.mean(frame_differences) * max_interval
+def calculate_threshold(frame_differences, max_interval, beta=1):
+    return beta * np.mean(frame_differences) * max_interval
 
 
-def extract_key_frames(input_folder, cal_diff_func, max_interval=10, total_frames=-1):
+def extract_key_frames(input_folder, cal_diff_func, max_interval=10, total_frames=-1, alpha=1):
     """Adaptive frame sampling extracts key frames"""
 
     frames = sorted([os.path.join(input_folder, f) for f in os.listdir(input_folder)])
@@ -127,7 +127,7 @@ def extract_key_frames(input_folder, cal_diff_func, max_interval=10, total_frame
         if i > 0:
             accumulated_diff += frame_differences[i - 1]
 
-        if (i == 0 or (i - last_key_frame_index) >= max_interval
+        if (i == 0 or (i - last_key_frame_index) >= alpha * max_interval
                 or (accumulated_diff > threshold and i - last_key_frame_index > 1)):
             # key_frame_path = os.path.join(output_folder, f'key_frame_{i}.jpg')
             # cv2.imwrite(key_frame_path, frame)

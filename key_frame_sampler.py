@@ -140,11 +140,16 @@ def calculate_threshold(frame_differences, max_interval):
 #     return key_frame_idxes
 
 
-def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
+def extract_key_frames(input_folder, cal_diff_func, max_interval=10, total_frames=-1):
     """Extracts key frames based on a regular interval or difference-based selection"""
 
     frames = sorted([os.path.join(input_folder, f) for f in os.listdir(input_folder)])
-    total_frames = len(frames)
+    if total_frames == -1:
+        total_frames = len(frames)
+    else:
+        frames = frames[:total_frames]
+    print(total_frames)
+
     num_key_frames = total_frames // max_interval + (1 if total_frames % max_interval else 0)
 
     # Method 1: Uniform Sampling
@@ -168,8 +173,7 @@ def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
         return list(range(0, len(frames), max_interval))
 
     # num key frames
-    total_frames = len(frames)
-    expected_num_intervals = (total_frames - 1) // max_interval  # 减一因为是基于间隔计算
+    expected_num_intervals = (total_frames - 1) // max_interval
 
     # frame differences
     frame_differences = []
@@ -184,19 +188,19 @@ def extract_key_frames(input_folder, cal_diff_func, max_interval=10):
     target_diff_per_interval = total_difference / expected_num_intervals
 
     # select
-    key_frame_idxes = [0]
+    key_frame_idxes = {0}
     accumulated_diff = 0
 
     for i in range(1, total_frames):
         accumulated_diff += frame_differences[i - 1]
         # sum > target sum
         if accumulated_diff >= target_diff_per_interval:
-            key_frame_idxes.append(i)
+            key_frame_idxes.add(i)
             accumulated_diff = 0
 
     # last
-    if key_frame_idxes[-1] != len(frames) - 1:
-        key_frame_idxes.append(len(frames) - 1)
+    # key_frame_idxes.add(len(frames) - 1)
+    key_frame_idxes = sorted(list(key_frame_idxes))
 
     print(key_frame_idxes, len(key_frame_idxes))
     return key_frame_idxes

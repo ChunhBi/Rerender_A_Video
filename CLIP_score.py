@@ -5,7 +5,8 @@ from transformers import CLIPProcessor, CLIPModel
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-img_path = "result/video2190_ddim/keys/"
+img_path = "result/man_dpm/keys/"
+prompt = "a handsome man in van gogh painting"
 
 imgs = sorted(os.listdir(img_path))
 
@@ -15,7 +16,7 @@ img_num = 0
 for img in imgs:
     img_num += 1
     image = Image.open(img_path + img)
-    inputs = processor(text=["a handsome man in Chinese ink wash painting, black and white"], images=image, return_tensors="pt", padding=True)
+    inputs = processor(text=[prompt], images=image, return_tensors="pt", padding=True)
 
     outputs = model(**inputs)
     logits_per_image = outputs.logits_per_image  # this is the image-text similarity score

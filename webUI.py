@@ -1,6 +1,7 @@
 import os
 import shutil
 from enum import Enum
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 import cv2
 import einops

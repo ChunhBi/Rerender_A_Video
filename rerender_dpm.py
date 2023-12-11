@@ -198,9 +198,10 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
                                            eta=eta,
                                            unconditional_guidance_scale=scale,
                                            unconditional_conditioning=un_cond,
-                                           controller=controller,
+                                        #    controller=controller,
                                            x0=x0,
-                                           strength=x0_strength)
+                                        #    strength=x0_strength
+                                           )
         x_samples = model.decode_first_stage(samples)
         pre_result = x_samples
         pre_img = img
@@ -285,9 +286,10 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
             eta=eta,
             unconditional_guidance_scale=scale,
             unconditional_conditioning=un_cond,
-            controller=controller,
+            # controller=controller,
             x0=x0,
-            strength=x0_strength)
+            # strength=x0_strength
+            )
         direct_result = model.decode_first_stage(samples)
 
         if not pixelfusion:
@@ -365,10 +367,10 @@ def rerender(cfg: RerenderConfig, first_img_only: bool, key_video_path: str):
                 eta=eta,
                 unconditional_guidance_scale=scale,
                 unconditional_conditioning=un_cond,
-                controller=controller,
+                # controller=controller,
                 x0=x0,
-                strength=x0_strength,
-                xtrg=xtrg,
+                # strength=x0_strength,
+                # xtrg=xtrg,
                 mask=masks,
                 noise_rescale=noise_rescale)
             x_samples = model.decode_first_stage(samples)

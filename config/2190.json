@@ -1,7 +1,7 @@
 {
-    "input": "videos/video375.mp4",
-    "output": "videos/375/blend.mp4",
-    "work_dir": "videos/375",
+    "input": "videos/2190part.mp4",
+    "output": "videos/2190/blend.mp4",
+    "work_dir": "videos/2190",
     "key_subdir": "keys",
     "frame_count": 201,
     "interval": 10,

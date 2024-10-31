@@ -1,3 +1,11 @@
+# Rerender A Video - Modified
+This is the final project for Deep Learning Fall 2023. We modified the Inference method using DPM-solver instead of DDIM for faster sampling. 
+We used non-uniform key frame selection to less time cost and better video consistency.
+For details, please see our [report](./FinalReport.pdf).
+
+
+Below are the original README ...
+
 # Rerender A Video - Official PyTorch Implementation
 
 ![teaser](https://github.com/williamyang1991/Rerender_A_Video/assets/18130694/aa7dc164-dab7-43f4-a46b-758b34911f16)
